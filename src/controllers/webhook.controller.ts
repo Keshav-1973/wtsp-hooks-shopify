@@ -14,69 +14,71 @@ import { abandonedCheckoutTemplate } from "../templates/AbandonedCheckout";
 
 export const handleCheckoutEvent = async (req: Request, res: Response) => {
   const checkoutData: ShopifyCheckout = req.body;
+
   if (checkoutData.completed_at) {
     console.log("Checkout already completed, no WhatsApp sent.");
-    res.status(200).send("Checkout already completed, no WhatsApp sent.");
-  } else {
-    const rawPhone = getRawPhone(checkoutData);
-    const phone = parseIndianPhoneNumber(rawPhone);
-    if (isValidIndianPhoneNumber(rawPhone)) {
-      // ✅ Deduplication: check if this checkoutId already processed
-      const existing = await fireStoreDb
-        .collection("whatsappLogs")
-        .where("checkoutId", "==", checkoutData?.id)
-        .get();
-
-      if (!existing.empty) {
-        console.log(`🔁 Already processed checkoutId ${checkoutData?.id}`);
-        res
-          .status(200)
-          .send(`Already processed checkoutId ${checkoutData?.id}`);
-        return;
-      }
-
-      const recentMessages = await fireStoreDb
-        .collection("whatsappLogs")
-        .where("phone", "==", phone)
-        .orderBy("checkoutId", "desc")
-        .limit(1)
-        .get();
-      const now = new Date() as any;
-      const lastSentTime = recentMessages?.docs?.[0]
-        ?.data()
-        ?.timeStamp?.toDate();
-
-      if (lastSentTime && now - lastSentTime.getTime() < 24 * 60 * 60 * 1000) {
-        console.log("WhatsApp already sent in last 24h");
-        res.status(200).send(`WhatsApp already sent in last 24h`);
-        return;
-      }
-
-      try {
-        const messageData = abandonedCheckoutTemplate(checkoutData, phone);
-        const response = await sendWhatsAppMessage(messageData);
-        logMessageStatusToDb({
-          checkoutData,
-          phone,
-          wtspResponse: response.data,
-          wtspError: null,
-          hookType: ROUTE_NAMES.CHECKOUT_UPDATE,
-        });
-      } catch (error: any) {
-        logMessageStatusToDb({
-          checkoutData,
-          phone,
-          wtspError: error.response.data?.error,
-          wtspResponse: null,
-          hookType: ROUTE_NAMES.CHECKOUT_UPDATE,
-        });
-      }
-    } else {
-      console.error("Invalid Phone Number");
-    }
+    return res
+      .status(200)
+      .send("Checkout already completed, no WhatsApp sent.");
   }
 
-  res.status(200).send("Checkout event processed");
+  const rawPhone = getRawPhone(checkoutData);
+  const phone = parseIndianPhoneNumber(rawPhone);
+
+  if (!isValidIndianPhoneNumber(rawPhone)) {
+    console.error("Invalid Phone Number");
+    return res.status(200).send("Invalid Phone Number");
+  }
+
+  const existing = await fireStoreDb
+    .collection("whatsappLogs")
+    .where("checkoutId", "==", checkoutData?.id)
+    .get();
+
+  if (!existing.empty) {
+    console.log(`🔁 Already processed checkoutId ${checkoutData?.id}`);
+    return res
+      .status(200)
+      .send(`Already processed checkoutId ${checkoutData?.id}`);
+  }
+
+  const recentMessages = await fireStoreDb
+    .collection("whatsappLogs")
+    .where("phone", "==", phone)
+    .orderBy("checkoutId", "desc")
+    .limit(1)
+    .get();
+
+  const now = new Date() as any;
+  const lastSentTime = recentMessages?.docs?.[0]?.data()?.timeStamp?.toDate();
+
+  if (lastSentTime && now - lastSentTime.getTime() < 24 * 60 * 60 * 1000) {
+    console.log("WhatsApp already sent in last 24h");
+    return res.status(200).send(`WhatsApp already sent in last 24h`);
+  }
+
+  try {
+    const messageData = abandonedCheckoutTemplate(checkoutData, phone);
+    const response = await sendWhatsAppMessage(messageData);
+
+    await logMessageStatusToDb({
+      checkoutData,
+      phone,
+      wtspResponse: response.data,
+      wtspError: null,
+      hookType: ROUTE_NAMES.CHECKOUT_UPDATE,
+    });
+  } catch (error: any) {
+    await logMessageStatusToDb({
+      checkoutData,
+      phone,
+      wtspError: error.response?.data?.error,
+      wtspResponse: null,
+      hookType: ROUTE_NAMES.CHECKOUT_UPDATE,
+    });
+  }
+
+  return res.status(200).send("Checkout event processed");
 };
 
 export const handleOrderEvent = async (req: Request, res: Response) => {
