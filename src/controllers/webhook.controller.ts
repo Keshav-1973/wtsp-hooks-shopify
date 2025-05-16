@@ -22,10 +22,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
     );
     return res
       .status(200)
-      .send(
-        ROUTE_NAMES.CHECKOUT_UPDATE,
-        "Checkout already completed, no WhatsApp sent."
-      );
+      .send("Checkout already completed, no WhatsApp sent.");
   }
 
   const rawPhone = getRawPhone(checkoutData);
@@ -36,9 +33,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
       ROUTE_NAMES.CHECKOUT_UPDATE,
       `Invalid Phone Number${rawPhone}`
     );
-    return res
-      .status(200)
-      .send(ROUTE_NAMES.CHECKOUT_UPDATE, `Invalid Phone Number${rawPhone}`);
+    return res.status(200).send(`Invalid Phone Number${rawPhone}`);
   }
 
   const existing = await fireStoreDb
@@ -53,10 +48,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
     );
     return res
       .status(200)
-      .send(
-        ROUTE_NAMES.CHECKOUT_UPDATE,
-        `Already processed checkoutId ${checkoutData?.id}`
-      );
+      .send(`Already processed checkoutId ${checkoutData?.id}`);
   }
 
   const recentMessages = await fireStoreDb
@@ -74,9 +66,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
       ROUTE_NAMES.CHECKOUT_UPDATE,
       "WhatsApp already sent in last 24h"
     );
-    return res
-      .status(200)
-      .send(ROUTE_NAMES.CHECKOUT_UPDATE, `WhatsApp already sent in last 24h`);
+    return res.status(200).send(`WhatsApp already sent in last 24h`);
   }
 
   try {
