@@ -4,6 +4,7 @@ import verifyShopifyHmac from "../middlewares/verifyShopifyHmac";
 import {
   handleCheckoutEvent,
   handleOrderEvent,
+  handleWebhookVerification,
 } from "../controllers/webhook.controller";
 import { ROUTE_NAMES } from "../constants/Constants";
 
@@ -15,5 +16,6 @@ router.post(
   handleCheckoutEvent
 );
 router.post(ROUTE_NAMES.ORDER_CREATE, verifyShopifyHmac, handleOrderEvent);
+router.get(ROUTE_NAMES.WTSP_HOOK_CALLBACK, handleWebhookVerification);
 
 export default router;

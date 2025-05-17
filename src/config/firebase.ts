@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const { FIREBASE_PROJECT_ID, SERVICE_KEY } = process.env;
+
 const key = (): ServiceAccount | null => {
   if (SERVICE_KEY) {
     try {

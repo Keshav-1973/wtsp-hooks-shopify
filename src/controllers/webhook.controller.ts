@@ -11,6 +11,11 @@ import {
 import { ROUTE_NAMES } from "../constants/Constants";
 import { fireStoreDb } from "../config/firebase";
 import { abandonedCheckoutTemplate } from "../templates/AbandonedCheckout";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const { VERIFY_TOKEN } = process.env;
 
 export const handleCheckoutEvent = async (req: Request, res: Response) => {
   console.log("handleCheckoutEvent triggered");
@@ -113,4 +118,21 @@ export const handleOrderEvent = async (req: Request, res: Response) => {
   }
 
   res.status(200).send("Order event processed");
+};
+
+export const handleWebhookVerification = async (
+  req: Request,
+  res: Response
+) => {
+  console.log("handleWebhookVerification triggered");
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("✅ Webhook verified");
+    res.status(200).send(challenge as string);
+  } else {
+    res.sendStatus(403);
+  }
 };
