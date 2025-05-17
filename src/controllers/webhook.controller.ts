@@ -2,13 +2,16 @@ import { Request, Response } from "express";
 import { ShopifyCheckout } from "../types";
 import { sendWhatsAppMessage } from "../services/whatsapp.service";
 import { orderConfirmationTemplate } from "../templates/OrderComplete";
-import { logMessageStatusToDb } from "../services/logger.service";
+import {
+  logMessageStatusToDb,
+  updateDbCollection,
+} from "../services/logger.service";
 import { getRawPhone } from "../utils/checkoutUtils.ts";
 import {
   isValidIndianPhoneNumber,
   parseIndianPhoneNumber,
 } from "../utils/phoneUtils.ts";
-import { ROUTE_NAMES } from "../constants/Constants";
+import { ROUTE_NAMES, WTSP_COLLECTION } from "../constants/Constants";
 import { fireStoreDb } from "../config/firebase";
 import { abandonedCheckoutTemplate } from "../templates/AbandonedCheckout";
 import dotenv from "dotenv";
@@ -37,7 +40,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
   }
 
   const existing = await fireStoreDb
-    .collection("whatsappLogs")
+    .collection(WTSP_COLLECTION)
     .where("checkoutId", "==", checkoutData?.id)
     .get();
 
@@ -49,7 +52,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
   }
 
   const recentMessages = await fireStoreDb
-    .collection("whatsappLogs")
+    .collection(WTSP_COLLECTION)
     .where("phone", "==", phone)
     .orderBy("checkoutId", "desc")
     .limit(1)
@@ -66,6 +69,8 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
   try {
     const messageData = abandonedCheckoutTemplate(checkoutData, phone);
     const response = await sendWhatsAppMessage(messageData);
+
+    console.log("ibjjj 111", response.data);
 
     await logMessageStatusToDb({
       checkoutData,
@@ -97,7 +102,7 @@ export const handleOrderEvent = async (req: Request, res: Response) => {
     try {
       const messageData = orderConfirmationTemplate(checkoutData, phone);
       const response = await sendWhatsAppMessage(messageData);
-      logMessageStatusToDb({
+      await logMessageStatusToDb({
         checkoutData,
         phone,
         wtspResponse: response.data,
@@ -105,7 +110,7 @@ export const handleOrderEvent = async (req: Request, res: Response) => {
         hookType: ROUTE_NAMES.ORDER_CREATE,
       });
     } catch (error: any) {
-      logMessageStatusToDb({
+      await logMessageStatusToDb({
         checkoutData,
         phone,
         wtspError: error.response.data?.error,
@@ -134,5 +139,43 @@ export const handleWebhookVerification = async (
     res.status(200).send(challenge as string);
   } else {
     res.sendStatus(403);
+  }
+};
+
+export const handleMetaCallback = async (req: Request, res: Response) => {
+  console.log("handleMetaCallback triggered");
+
+  const body = req.body;
+
+  if (!body?.entry || !Array.isArray(body.entry) || body.entry.length === 0) {
+    return res.sendStatus(404);
+  }
+
+  const response = body.entry?.[0]?.changes?.[0]?.value?.statuses?.[0] ?? null;
+
+  const messageId = response?.id ?? "";
+
+  try {
+    const messageDoc = await fireStoreDb
+      .collection(WTSP_COLLECTION)
+      .where("messageId", "==", messageId)
+      .get();
+
+    if (messageDoc.empty) {
+      console.log(`No existing document found for messageId:${messageId}`);
+      return res.sendStatus(200);
+    }
+    const docSnapshot = messageDoc.docs[0];
+    const docRef = docSnapshot.ref;
+
+    await updateDbCollection({
+      docRef: docRef,
+      hookResponse: response,
+    });
+
+    return res.sendStatus(200);
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+    return res.sendStatus(500);
   }
 };

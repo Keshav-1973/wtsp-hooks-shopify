@@ -3,6 +3,7 @@ import express from "express";
 import verifyShopifyHmac from "../middlewares/verifyShopifyHmac";
 import {
   handleCheckoutEvent,
+  handleMetaCallback,
   handleOrderEvent,
   handleWebhookVerification,
 } from "../controllers/webhook.controller";
@@ -17,5 +18,6 @@ router.post(
 );
 router.post(ROUTE_NAMES.ORDER_CREATE, verifyShopifyHmac, handleOrderEvent);
 router.get(ROUTE_NAMES.WTSP_HOOK_CALLBACK, handleWebhookVerification);
+router.post(ROUTE_NAMES.WTSP_HOOK_CALLBACK, handleMetaCallback);
 
 export default router;

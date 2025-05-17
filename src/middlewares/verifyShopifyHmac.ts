@@ -15,9 +15,9 @@ const verifyShopifyHmac = (req: Request, res: Response, next: NextFunction) => {
     .update(body)
     .digest("base64");
 
-  // if (hmacHeader !== generatedHmac) {
-  //   return res.status(400).send("Invalid HMAC");
-  // }
+  if (hmacHeader !== generatedHmac) {
+    return res.status(400).send("Invalid HMAC");
+  }
 
   next();
 };

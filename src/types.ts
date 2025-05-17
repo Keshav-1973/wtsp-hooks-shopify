@@ -80,15 +80,15 @@ export type WhatsAppMessageRequest = {
   [key: string]: any; // for additional fields like "template", "text", etc.
 };
 
+export type FirestoreLikeTimestamp = {
+  _seconds: number;
+  _nanoseconds: number;
+};
+
 export type WhatsAppMessageResponse = {
   messaging_product: "whatsapp";
   contacts: { input: string; wa_id: string }[];
   messages: { id: string; message_status: string }[];
-};
-
-export type FirestoreLikeTimestamp = {
-  _seconds: number;
-  _nanoseconds: number;
 };
 
 export type WhatsAppApiError = {
@@ -100,4 +100,18 @@ export type WhatsAppApiError = {
     details: string; // e.g., "template name (ORDER_CREATE_TEMPLATE) does not exist in en"
   };
   fbtrace_id: string; // Facebook trace ID for debugging
+};
+
+export type WhatsAppCallbackError = {
+  id: string;
+  status: "failed" | "sent" | "delivered"; // add more statuses as needed
+  timestamp: string; // could be converted to `number` if used as a Unix timestamp
+  recipient_id: string;
+  errors: {
+    code: number;
+    title: string;
+    message: string;
+    error_data: Record<string, any>; // Replace with a more specific type if known
+    href: string;
+  }[];
 };

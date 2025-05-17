@@ -3,10 +3,12 @@ import { fireStoreAdmin, fireStoreDb } from "../config/firebase";
 import {
   ShopifyCheckout,
   WhatsAppApiError,
+  WhatsAppCallbackError,
   WhatsAppMessageResponse,
 } from "../types";
 import { getFullName } from "../utils/checkoutUtils.ts";
 import { formatTimeStamp } from "../utils/dateUtils";
+import { WTSP_COLLECTION } from "../constants/Constants";
 
 export async function logMessageStatusToDb({
   checkoutData,
@@ -29,7 +31,7 @@ export async function logMessageStatusToDb({
 
   const { id = "", completed_at = "" } = checkoutData;
 
-  await fireStoreDb.collection("whatsappLogs").add({
+  await fireStoreDb.collection(WTSP_COLLECTION).add({
     fullName: fullName ?? "",
     phone: phone ?? "",
     checkoutId: id ?? "",
@@ -40,5 +42,24 @@ export async function logMessageStatusToDb({
     wtspResponse: wtspResponse ?? null,
     wtspError: wtspError ?? null,
     hookType: hookType ?? "",
+  });
+}
+
+export async function updateDbCollection({
+  docRef,
+  hookResponse,
+}: {
+  docRef: FirebaseFirestore.DocumentReference<
+    FirebaseFirestore.DocumentData,
+    FirebaseFirestore.DocumentData
+  >;
+  hookResponse: WhatsAppCallbackError | null;
+}): Promise<void> {
+  const timestamp = fireStoreAdmin.firestore.Timestamp.now();
+  const formattedDateTime = formatTimeStamp(timestamp);
+
+  await docRef.update({
+    formattedTimStamp: formattedDateTime ?? "",
+    hookResponse: hookResponse ?? null,
   });
 }
