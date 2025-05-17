@@ -13,13 +13,11 @@ import { fireStoreDb } from "../config/firebase";
 import { abandonedCheckoutTemplate } from "../templates/AbandonedCheckout";
 
 export const handleCheckoutEvent = async (req: Request, res: Response) => {
+  console.log("handleCheckoutEvent triggered");
   const checkoutData: ShopifyCheckout = req.body;
 
   if (checkoutData.completed_at) {
-    console.log(
-      ROUTE_NAMES.CHECKOUT_UPDATE,
-      "Checkout already completed, no WhatsApp sent."
-    );
+    console.log("Checkout already completed, no WhatsApp sent.");
     return res
       .status(200)
       .send("Checkout already completed, no WhatsApp sent.");
@@ -29,10 +27,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
   const phone = parseIndianPhoneNumber(rawPhone);
 
   if (!isValidIndianPhoneNumber(rawPhone)) {
-    console.error(
-      ROUTE_NAMES.CHECKOUT_UPDATE,
-      `Invalid Phone Number${rawPhone}`
-    );
+    console.error(`Invalid Phone Number${rawPhone}`);
     return res.status(200).send(`Invalid Phone Number${rawPhone}`);
   }
 
@@ -42,10 +37,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
     .get();
 
   if (!existing.empty) {
-    console.log(
-      ROUTE_NAMES.CHECKOUT_UPDATE,
-      `🔁 Already processed checkoutId ${checkoutData?.id}`
-    );
+    console.log(`🔁 Already processed checkoutId ${checkoutData?.id}`);
     return res
       .status(200)
       .send(`Already processed checkoutId ${checkoutData?.id}`);
@@ -62,10 +54,7 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
   const lastSentTime = recentMessages?.docs?.[0]?.data()?.timeStamp?.toDate();
 
   if (lastSentTime && now - lastSentTime.getTime() < 24 * 60 * 60 * 1000) {
-    console.log(
-      ROUTE_NAMES.CHECKOUT_UPDATE,
-      "WhatsApp already sent in last 24h"
-    );
+    console.log("WhatsApp already sent in last 24h");
     return res.status(200).send(`WhatsApp already sent in last 24h`);
   }
 
@@ -94,6 +83,8 @@ export const handleCheckoutEvent = async (req: Request, res: Response) => {
 };
 
 export const handleOrderEvent = async (req: Request, res: Response) => {
+  console.log("handleOrderEvent triggered");
+
   const checkoutData: ShopifyCheckout = req.body;
   const rawPhone = getRawPhone(checkoutData);
   const phone = parseIndianPhoneNumber(rawPhone);
@@ -118,10 +109,7 @@ export const handleOrderEvent = async (req: Request, res: Response) => {
       });
     }
   } else {
-    console.error(
-      ROUTE_NAMES.CHECKOUT_UPDATE,
-      `Invalid Phone Number${rawPhone}`
-    );
+    console.error(`Invalid Phone Number${rawPhone}`);
   }
 
   res.status(200).send("Order event processed");
