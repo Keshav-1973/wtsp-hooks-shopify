@@ -49,10 +49,7 @@ export async function updateDbCollection({
   docRef,
   hookResponse,
 }: {
-  docRef: FirebaseFirestore.DocumentReference<
-    FirebaseFirestore.DocumentData,
-    FirebaseFirestore.DocumentData
-  >;
+  docRef: FirebaseFirestore.DocumentReference;
   hookResponse: WhatsAppCallbackError | null;
 }): Promise<void> {
   const timestamp = fireStoreAdmin.firestore.Timestamp.now();
