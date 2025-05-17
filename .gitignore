@@ -12,3 +12,7 @@ pnpm-debug.log*
 # Optional: OS-specific files
 .DS_Store
 Thumbs.db
+
+
+# Lock file (optional - only if you're intentionally ignoring it)
+package-lock.json
