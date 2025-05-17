@@ -7,17 +7,20 @@ dotenv.config();
 const { SHOPIFY_SECRET_KEY = "" } = process.env;
 
 const verifyShopifyHmac = (req: Request, res: Response, next: NextFunction) => {
-  const hmacHeader = req.headers["X-Shopify-Hmac-Sha256"];
-  const body = JSON.stringify(req.body);
+  const hmac = req.get("X-Shopify-Hmac-Sha256");
+  if (!hmac || !SHOPIFY_SECRET_KEY) {
+    console.log("❌ Missing HMAC or SECRET_KEY");
+    return res.sendStatus(403);
+  }
 
-  const generatedHmac = crypto
+  const computedHmac = crypto
     .createHmac("sha256", SHOPIFY_SECRET_KEY)
-    .update(body)
+    .update(req.body.toString("utf8"))
     .digest("base64");
 
-  if (hmacHeader !== generatedHmac) {
-    console.error("Invalid HMAC");
-    return res.status(400).send("Invalid HMAC");
+  if (computedHmac !== hmac) {
+    console.log("❌ HMAC verification failed!");
+    return res.sendStatus(403);
   }
 
   next();
