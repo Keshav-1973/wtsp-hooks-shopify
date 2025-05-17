@@ -15,7 +15,7 @@ const verifyShopifyHmac = (req: Request, res: Response, next: NextFunction) => {
 
   const computedHmac = crypto
     .createHmac("sha256", SHOPIFY_SECRET_KEY)
-    .update(req.body.toString("utf8"))
+    .update(req.rawBody.toString("utf8"))
     .digest("base64");
 
   if (computedHmac !== hmac) {
