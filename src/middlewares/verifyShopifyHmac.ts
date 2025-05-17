@@ -7,7 +7,7 @@ dotenv.config();
 const { SHOPIFY_SECRET_KEY = "" } = process.env;
 
 const verifyShopifyHmac = (req: Request, res: Response, next: NextFunction) => {
-  const hmacHeader = req.headers["x-shopify-hmac-sha256"];
+  const hmacHeader = req.headers["X-Shopify-Hmac-Sha256"];
   const body = JSON.stringify(req.body);
 
   const generatedHmac = crypto
